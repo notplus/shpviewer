@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/ShpViewer">
+        <file alias="mainicon">Resources/mainicon.png</file>
+    </qresource>
+</RCC>

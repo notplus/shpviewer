@@ -1,0 +1,8 @@
+﻿  main.cpp
+  parseShp.cpp
+  quadTree.cpp
+  shpitem.cpp
+  ShpViewer.cpp
+  moc_ShpViewer.cpp
+c:\users\notplus\desktop\cpp\gui\shpviewer\shpviewer\shpviewer.cpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+  shpviewer.vcxproj -> C:\Users\notplus\Desktop\cpp\gui\shpviewer\Win32\Release\shpviewer.exe
