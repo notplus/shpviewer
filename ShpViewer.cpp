@@ -1,5 +1,4 @@
 #include "ShpViewer.h"
-#include "view.h"
 #include <qlayout.h>
 #include <qsplitter.h>
 #include <qdebug.h>
@@ -12,8 +11,18 @@ ShpViewer::ShpViewer(QWidget *parent)
 	//setupUi(this);
 	
 	this->setWindowIcon(QIcon(":/ShpViewer/mainicon"));
+	count = 0;
 
-	View *view = new View("ShpViewer");
+	paintw = new paintWidget;
+
+	dockw = new QDockWidget("shp file",this);
+	dockw->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable);
+	dockw->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+	addDockWidget(Qt::LeftDockWidgetArea,dockw);
+
+	listw = new QListWidget(dockw);
+	dockw->setWidget(listw);
+	connect(listw, SIGNAL(itemDoubleClicked(QListWidgetItem *)), this, SLOT(dockRender(QListWidgetItem *)));
 
 	openAction = new QAction(QIcon(":/doc-open"), tr("&Open..."), this);
 	openAction->setShortcuts(QKeySequence::Open);
@@ -30,10 +39,7 @@ ShpViewer::ShpViewer(QWidget *parent)
 	file->addAction(opendbfAction);
 
 	QStatusBar *bar = statusBar();
-	scene = new QGraphicsScene(this);
-	//populateScene();
-	view->view()->setScene(scene);
-	this->setCentralWidget(view);
+	this->setCentralWidget(paintw);
 	
 
 	setWindowTitle(tr("Shpviewer"));
@@ -48,12 +54,56 @@ void ShpViewer::openFile()
 			QMessageBox::warning(this, tr("Read File"), tr("Cannot open file:\n%1").arg(path));
 			return;
 		}
-		shpitems = parseSHP(file);
-		for (auto it : shpitems)
+		QFileInfo fi;
+		fi = QFileInfo(path);
+		QListWidgetItem *a = new QListWidgetItem(fi.fileName(), listw);
+		itemName.push_back(fi.fileName());
+		listw->addItem(a);
+		
+		Region r;
+		paintw->shape.push_back(parseShp(file,&r, count));
+		paintw->region.push_back(r);
+		
+		double cx = (paintw->region[count].left + paintw->region[count].right) / 2;
+		double cy = (paintw->region[count].up + paintw->region[count].bottom) / 2;
+
+		//int scaleX = (int)(1440 / ((paintw->region[count].right - paintw->region[count].left)*1));
+		//int scaleY = (int)(720 / ((paintw->region[count].up - paintw->region[count].bottom)*1));
+		int scaleX = (int)(paintw->width() / ((paintw->region[count].right - paintw->region[count].left)));
+		int scaleY = (int)(paintw->height() / ((paintw->region[count].up - paintw->region[count].bottom)));
+		int scale = scaleX < scaleY ? scaleX : scaleY;
+		cx = (paintw->region[count].left + paintw->region[count].right) / 2;
+		cy = (paintw->region[count].up + paintw->region[count].bottom) / 2;
+		paintw->mousePos.setX((180+cx)*4);
+		paintw->mousePos.setY((90-cy)*4);
+
+		if (shpshape::scale.size() == 1)
 		{
-			QGraphicsItem *item = new shpItem(it->tree, 0, 0);
-			scene->addItem(it);
+			shpshape::scale[count] = scale;
+			shpshape::scale.push_back(scale);
+			shpshape::transX[count] = (180 + cx) * 4 - (180 + cx)*shpshape::scale[count];
+			shpshape::transY[count] = (90 - cy) * 4 - (90 - cy)*shpshape::scale[count];
 		}
+		else
+		{
+			shpshape::scale[count] = scale;
+			shpshape::scale.push_back(scale);
+			shpshape::transX.push_back((180 + cx) * 4 - (180 + cx)*shpshape::scale[count]);
+			shpshape::transY.push_back((90 - cy) * 4 - (90 - cy)*shpshape::scale[count]);
+		}
+		
+		paintw->angle.push_back(0);
+		paintw->zoomSlider->setValue(scale);
+		paintw->index = count;
+		paintw->update();
+		a->setSelected(true);
+		paintw->updateTrans(paintw->size().width()/2, paintw->size().height()/2);
+		paintw->mousePos.setX(paintw->size().width()/2);
+		paintw->mousePos.setY(paintw->size().height()/2);
+
+		count++;
+		shpshape::tree.push_back(creatRoot());
+		
 		file.close();
 	}
 	else {
@@ -71,11 +121,12 @@ void ShpViewer::openDBF()
 			return;
 		}
 		dbfDATA = parse_dbf(file);
-		if (!shpitems.empty())
+		
+		if (!paintw->shape[paintw->index].empty())
 		{
-			for (size_t i = 0; i < shpitems.size(); i++)
+			for (size_t i = 0; i < paintw->shape[paintw->index].size(); i++)
 			{
-				shpitems[i]->dbfdata = dbfDATA.dbfdata[i];
+				paintw->shape[paintw->index][i]->dbfdata = dbfDATA.dbfdata[i];
 			}
 		}
 		QTableWidget* table = new QTableWidget();//创建一个表格
@@ -105,13 +156,16 @@ void ShpViewer::openDBF()
 	}
 }
 
-void ShpViewer::populateScene()
+void ShpViewer::dockRender(QListWidgetItem *item)
 {
-	
-}
-
-
-void ShpViewer::parse()
-{
-	
+	for (size_t i = 0; i < itemName.size(); i++)
+	{
+		if (itemName[i] == item->text())
+		{
+			paintw->index = &itemName[i] - &itemName[0];
+			paintw->zoomSlider->setValue(shpshape::scale[paintw->index]);
+			paintw->rotateSlider->setValue(paintw->angle[paintw->index]);
+		}
+	}
+	paintw->update();
 }

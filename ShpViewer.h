@@ -9,38 +9,39 @@
 #include <qfiledialog.h>
 #include <qmessagebox.h>
 #include "parseShp.h"
-#include "shpItem.h"
 #include <qwidget.h>
-#include "view.h"
+#include "paintWidget.h"
+#include <qdockwidget.h>
+#include <qlistwidget.h>
+#include <qfileinfo.h>
+#include <vector>
+#include <qstring.h>
+
 QT_BEGIN_NAMESPACE
 class QGraphicsScene;
 class QSplitter;
 QT_END_NAMESPACE
 
 class ShpViewer : public QMainWindow
-	//,
-	//public Ui::ShpViewerClass
 {
 	Q_OBJECT
 
 public:
 	ShpViewer(QWidget *parent = Q_NULLPTR);
-	vector<shpItem*> shpitems;
-
+	
 private:
-	//Ui::ShpViewerClass ui;
-	void populateScene();
-	void setupMatrix();
-	void parse();
-
+	paintWidget *paintw;
+	QDockWidget *dockw;
+	QListWidget *listw;
 	parseDBF dbfDATA;
 	QAction *openAction;
 	QAction *opendbfAction;
-	View *view;
 	QGraphicsScene *scene;
-	//QSplitter *h1Splitter;
-	//QSplitter *h2Splitter;
+	size_t count;
+	std::vector<QString> itemName;
+	
 private slots:
 	void openFile();
 	void openDBF();
+	void dockRender(QListWidgetItem *item);
 };

@@ -3,17 +3,15 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <Windows.h>
 #include <ctime>
-#include "quadTree.h"
 #include <qfile.h>
-#include "shpItem.h"
+#include "qTree.h"
+#include <qdebug.h>
+#include "shpshape.h"
 
 using namespace std;
 
-#define MAX_ELE_NUM 100
-
-class header
+class shpHeader
 {
 public:
 	vector<int> header_1;
@@ -21,7 +19,7 @@ public:
 };
 
 
-struct Header
+struct dbfHeader
 {
 	char version;
 	int year;
@@ -62,23 +60,23 @@ struct logical
 int32_t swapInt32(int32_t value);
 vector<int> parse_header_1(QFile& in);
 vector<double> parse_header_2(QFile& in);
-header parse_header(QFile& in);
+shpHeader parse_header(QFile& in);
 vector<int> parse_record_header(QFile& in);
+
+vector<shpshape*> parseShp(QFile& in, Region* reg, size_t fileIndex);
+shpshape* parse_shape(QFile& in, size_t fileIndex);
+shpshape* parse_point(QFile& in, size_t fileIndex);
+shpshape* parse_polyline(QFile& in, size_t fileIndex);
+shpshape* parse_polygon(QFile& in, size_t fileIndex);
+
 
 struct parseDBF
 {
 	vector< vector<string> > dbfdata;
-	Header dbfheader;
+	dbfHeader dbfheader;
 	vector<Record> dbfRecord;
 };
 
 parseDBF parse_dbf(QFile& input);
-vector<shpItem*> parseSHP(QFile& in);
-qTree* parse_shape(QFile& in);
-qTree* parse_point(QFile& in);
-qTree* parse_polyline(QFile& in);
-qTree* parse_polygon(QFile& in);
+
 void initRegion(Region *region, double up, double bottom, double left, double right);
-Region regionInclude(qTree* node, Region region);
-bool regionContain(Region regionA, Region regionB);
-void regionMax(qTree* node, Region region, Region* ret);

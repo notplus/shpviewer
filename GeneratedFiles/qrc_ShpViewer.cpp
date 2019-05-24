@@ -7,7 +7,7 @@
 *****************************************************************************/
 
 static const unsigned char qt_resource_data[] = {
-  // C:/Users/notplus/Desktop/cpp/gui/shpviewer/shpviewer/Resources/mainicon.png
+  // C:/Users/notplus/Desktop/cpp/project_1/shpviewer_V3.0/shpviewer/Resources/mainicon.png
   0x0,0x0,0x45,0x39,
   0x89,
   0x50,0x4e,0x47,0xd,0xa,0x1a,0xa,0x0,0x0,0x0,0xd,0x49,0x48,0x44,0x52,0x0,

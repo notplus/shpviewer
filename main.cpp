@@ -3,6 +3,12 @@
 #include <qdebug.h>
 #include <qtextcodec.h>
 
+std::vector<qTree> shpshape::tree;
+std::vector<int> shpshape::scale;
+std::vector<double> shpshape::transX;
+std::vector<double> shpshape::transY;
+bool shpshape::__init = shpshape::init();
+
 int main(int argc, char *argv[])
 {
 	QApplication a(argc, argv);

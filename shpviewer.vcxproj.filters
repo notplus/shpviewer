@@ -36,16 +36,16 @@
     <ClCompile Include="ShpViewer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="quadTree.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="shpitem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="parseShp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="view.cpp">
+    <ClCompile Include="qTree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shpshape.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="paintWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,7 +53,7 @@
     <QtMoc Include="ShpViewer.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="view.h">
+    <QtMoc Include="paintWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -63,13 +63,13 @@
     </QtRcc>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="quadTree.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="shpItem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="parseShp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="qTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shpshape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

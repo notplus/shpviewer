@@ -13,16 +13,16 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B12702AD-ABFB-343A-A199-8E24837244A3}</ProjectGuid>
     <Keyword>Qt4VSv1.0</Keyword>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup Condition="'$(QtMsBuild)'=='' or !Exists('$(QtMsBuild)\qt.targets')">
@@ -71,6 +71,7 @@
       <ExecutionDescription>Moc'ing %(Identity)...</ExecutionDescription>
       <IncludePath>.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtOpenGLExtensions;%(AdditionalIncludeDirectories)</IncludePath>
       <Define>UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DLL;QT_CORE_LIB;QT_GUI_LIB;QT_WIDGETS_LIB;QT_OPENGL_LIB;QT_OPENGLEXTENSIONS_LIB;%(PreprocessorDefinitions)</Define>
+      <QTDIR>$(QTDIR)</QTDIR>
     </QtMoc>
     <QtUic>
       <ExecutionDescription>Uic'ing %(Identity)...</ExecutionDescription>
@@ -79,6 +80,7 @@
     <QtRcc>
       <ExecutionDescription>Rcc'ing %(Identity)...</ExecutionDescription>
       <OutputFile>.\GeneratedFiles\qrc_%(Filename).cpp</OutputFile>
+      <QTDIR>$(QTDIR)</QTDIR>
     </QtRcc>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -102,6 +104,7 @@
       <ExecutionDescription>Moc'ing %(Identity)...</ExecutionDescription>
       <IncludePath>.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtOpenGLExtensions;%(AdditionalIncludeDirectories)</IncludePath>
       <Define>UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;QT_DLL;QT_NO_DEBUG;NDEBUG;QT_CORE_LIB;QT_GUI_LIB;QT_WIDGETS_LIB;QT_OPENGL_LIB;QT_OPENGLEXTENSIONS_LIB;%(PreprocessorDefinitions)</Define>
+      <QTDIR>$(QTDIR)</QTDIR>
     </QtMoc>
     <QtUic>
       <ExecutionDescription>Uic'ing %(Identity)...</ExecutionDescription>
@@ -110,30 +113,34 @@
     <QtRcc>
       <ExecutionDescription>Rcc'ing %(Identity)...</ExecutionDescription>
       <OutputFile>.\GeneratedFiles\qrc_%(Filename).cpp</OutputFile>
+      <QTDIR>$(QTDIR)</QTDIR>
     </QtRcc>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="paintWidget.cpp" />
     <ClCompile Include="parseShp.cpp" />
-    <ClCompile Include="quadTree.cpp" />
-    <ClCompile Include="shpitem.cpp" />
+    <ClCompile Include="qTree.cpp" />
+    <ClCompile Include="shpshape.cpp" />
     <ClCompile Include="ShpViewer.cpp" />
-    <ClCompile Include="view.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="ShpViewer.h" />
+    <QtMoc Include="ShpViewer.h">
+      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\GeneratedFiles;.;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include;.\GeneratedFiles\$(ConfigurationName);C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtCore;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtGui;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtANGLE;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtWidgets;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtOpenGL;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtOpenGLExtensions;%(AdditionalIncludeDirectories)</IncludePath>
+      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\GeneratedFiles;.;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include;.\GeneratedFiles\$(ConfigurationName);C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtCore;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtGui;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtANGLE;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtWidgets;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtOpenGL;C:\Qt\Qt5.12.2\5.12.2\msvc2017\include\QtOpenGLExtensions;%(AdditionalIncludeDirectories)</IncludePath>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="ShpViewer.qrc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="parseShp.h" />
-    <ClInclude Include="quadTree.h" />
-    <ClInclude Include="shpItem.h" />
-    <QtMoc Include="view.h">
-      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets</IncludePath>
-      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets</IncludePath>
+    <QtMoc Include="paintWidget.h">
+      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtOpenGLExtensions</IncludePath>
+      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtOpenGLExtensions</IncludePath>
     </QtMoc>
+    <ClInclude Include="parseShp.h" />
+    <ClInclude Include="qTree.h" />
+    <ClInclude Include="shpshape.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

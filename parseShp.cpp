@@ -1,9 +1,4 @@
 #include "parseShp.h"
-#include "quadTree.h"
-#include <qdebug.h>
-int FILELENGTH;
-
-header header_1;
 
 int32_t swapInt32(int32_t value)
 {
@@ -16,7 +11,7 @@ int32_t swapInt32(int32_t value)
 vector<int> parse_header_1(QFile& in)
 {
 	unsigned int num;
-	vector<int> header_1;
+	vector<int> header_1;	
 	for (size_t i = 0; i < 9; i++)
 	{
 		if (i < 7)
@@ -49,9 +44,9 @@ vector<double> parse_header_2(QFile& in)
 	return header_2;
 }
 
-header parse_header(QFile &in)
+shpHeader parse_header(QFile &in)
 {
-	header header;
+	shpHeader header;
 	header.header_1 = parse_header_1(in);
 	header.header_2 = parse_header_2(in);
 	return header;
@@ -72,57 +67,63 @@ vector<int> parse_record_header(QFile& in)
 	return record;
 }
 
-vector<shpItem*> parseSHP(QFile& in)
+vector<shpshape*> parseShp(QFile& in, Region* reg, size_t fileIndex)
 {
-	vector<shpItem*> shp;
-	header_1 = parse_header(in);
-	for (int filele = 0; filele < header_1.header_1[6]*2 - 100;) {
+	vector<shpshape*> shp;
+	shpHeader header = parse_header(in);
+	initRegion(reg, header.header_2[3], header.header_2[1],
+		header.header_2[0], header.header_2[2]);
+	for (int filele = 0; filele < header.header_1[6] * 2 - 100;)
+	{
 		auto record = parse_record_header(in);
 		filele += record[1];
-		shpItem* shptemp = new shpItem(parse_shape(in),0,0);
+		shpshape* shptemp = parse_shape(in,fileIndex);
 		shp.push_back(shptemp);
 	}
-
+	
 	return shp;
 }
 
-qTree* parse_shape(QFile& in)
+shpshape* parse_shape(QFile& in, size_t fileIndex)
 {
 	int type;
 	in.read((char*)&type, 4);
-	qTree* ret;
+	shpshape* ret;
 	switch (type)
 	{
 	case 1:
-		ret = parse_point(in);
+		ret = parse_point(in,fileIndex);
 		break;
 	case 3:
-		ret = parse_polyline(in);
+		ret = parse_polyline(in, fileIndex);
 		break;
 	case 5:
-		ret = parse_polygon(in);
+		ret = parse_polygon(in, fileIndex);
 		break;
 	default:
-		ret = parse_point(in);
+		ret = parse_point(in, fileIndex);
 		break;
 	}
 
 	return ret;
 }
 
-qTree* parse_point(QFile& in)
+shpshape* parse_point(QFile& in, size_t fileIndex)
 {
 	int NumParts;
 	int NumPoints;
-	Region rootRegion;
-	initRegion(&rootRegion, 90, -90, -180, 180);
-	qPoint* point = new qPoint;
-	point->initNode(point, 1, rootRegion);
+	Region region;
+	shapeFactory* factory = new shapeFactory;
+	shppoint* point = factory->createPoint();
+	double scope[4];
 	for (size_t i = 0; i < 4; i++)
 	{
 		double a;
 		in.read((char*)&a, 8);
+		scope[i] = a;
 	}
+	initRegion(&region, scope[3], scope[1], scope[0], scope[2]);
+	point->region = region;
 	in.read((char*)&NumParts, 4);
 	in.read((char*)&NumPoints, 4);
 	for (int i = 0; i < NumParts; i++)
@@ -131,39 +132,41 @@ qTree* parse_point(QFile& in)
 		in.read((char*)&a, 4);
 	}
 	for (int i = 0; i < NumPoints; i++) {
-		element ele;
+		elePoint ele;
 		double x, y;
 		in.read((char*)&x, 8);
 		in.read((char*)&y, 8);
-		ele.ele_point.lat = y;
-		ele.ele_point.lng = x;
-		point->insertEle(point, ele);
+		ele.y = y;
+		ele.x = x;
+		point->tree[fileIndex].insertEle(&point->tree[fileIndex], ele);
 	}
-
+	
 	return point;
 }
 
-qTree* parse_polyline(QFile& in)
+shpshape* parse_polyline(QFile& in, size_t fileIndex)
 {
 	int NumParts;
 	int NumPoints;
-	Region rootRegion;
-	initRegion(&rootRegion, 90, -90, -180, 180);
-	vector<int> pointIndex;
-	qLine* line = new qLine;
-	line->initNode(line, 1, rootRegion);
+	Region region;
+	shapeFactory* factory = new shapeFactory;
+	shpline* line = factory->createLine();
+	double scope[4];
 	for (size_t i = 0; i < 4; i++)
 	{
 		double a;
 		in.read((char*)&a, 8);
+		scope[i] = a;
 	}
+	initRegion(&region, scope[3], scope[1], scope[0], scope[2]);
+	line->region = region;
 	in.read((char*)&NumParts, 4);
 	in.read((char*)&NumPoints, 4);
 	for (int i = 0; i < NumParts; i++)
 	{
 		int a;
 		in.read((char*)&a, 4);
-		pointIndex.push_back(a);
+		line->partsIndex.push_back(a);
 	}
 	double x0, y0;
 	for (int j = 0; j < NumParts; j++)
@@ -174,16 +177,16 @@ qTree* parse_polyline(QFile& in)
 		else if (NumParts == 1)
 			index = NumPoints;
 		else
-			index = pointIndex[j + 1];
+			index = line->partsIndex[j + 1];
 
 		int size;
 		if (j != NumParts - 1)
-			size = pointIndex[j + 1] - pointIndex[j];
+			size = line->partsIndex[j + 1] - line->partsIndex[j];
 		else
-			size = NumPoints - pointIndex[j];
+			size = NumPoints - line->partsIndex[j];
 		for (int i = 0; i < size / 2; i++)
 		{
-			element ele;
+			eleLine ele;
 			double x1, y1, x2, y2;
 			in.read((char*)&x1, 8);
 			in.read((char*)&y1, 8);
@@ -191,63 +194,64 @@ qTree* parse_polyline(QFile& in)
 			in.read((char*)&y2, 8);
 			if (i)
 			{
-				element elel;
-				elel.ele_line.x1 = x0;
-				elel.ele_line.x2 = x1;
-				elel.ele_line.y1 = y0;
-				elel.ele_line.y2 = y1;
-				line->insertEle(line, elel);
+				eleLine elel;
+				elel.x1 = x0;
+				elel.x2 = x1;
+				elel.y1 = y0;
+				elel.y2 = y1;
+				line->tree[fileIndex].insertEle(&line->tree[fileIndex], elel);
 			}
 			x0 = x2;
 			y0 = y2;
-			ele.ele_line.x1 = x1;
-			ele.ele_line.x2 = x2;
-			ele.ele_line.y1 = y1;
-			ele.ele_line.y2 = y2;
+			ele.x1 = x1;
+			ele.x2 = x2;
+			ele.y1 = y1;
+			ele.y2 = y2;
 
-			line->insertEle(line, ele);
+			line->tree[fileIndex].insertEle(&line->tree[fileIndex], ele);
 		}
 		if (size % 2)
 		{
-			element ele;
+			eleLine ele;
 			double x1, y1;
 			in.read((char*)&x1, 8);
 			in.read((char*)&y1, 8);
 
-			ele.ele_line.x1 = x0;
-			ele.ele_line.x2 = x1;
-			ele.ele_line.y1 = y0;
-			ele.ele_line.y2 = y1;
+			ele.x1 = x0;
+			ele.x2 = x1;
+			ele.y1 = y0;
+			ele.y2 = y1;
 
-			line->insertEle(line, ele);
+			line->tree[fileIndex].insertEle(&line->tree[fileIndex], ele);
 		}
 	}
 
 	return line;
 }
 
-qTree* parse_polygon(QFile& in)
+shpshape* parse_polygon(QFile& in, size_t fileIndex)
 {
 	int NumParts;
 	int NumPoints;
-	Region rootRegion;
-	initRegion(&rootRegion, 90, -90, -180, 180);
-	qLine temp;
-	vector<int> pointIndex;
-	qPolygon* polygon = new qPolygon;
-	polygon->initNode(polygon, 1, rootRegion);
+	Region region;
+	shapeFactory* factory = new shapeFactory;
+	shppolygon* polygon = factory->createPolygon();
+	double scope[4];
 	for (size_t i = 0; i < 4; i++)
 	{
 		double a;
 		in.read((char*)&a, 8);
+		scope[i] = a;
 	}
+	initRegion(&region, scope[3], scope[1], scope[0], scope[2]);
+	polygon->region = region;
 	in.read((char*)&NumParts, 4);
 	in.read((char*)&NumPoints, 4);
 	for (int i = 0; i < NumParts; i++)
 	{
 		int a;
 		in.read((char*)&a, 4);
-		pointIndex.push_back(a);
+		polygon->partsIndex.push_back(a);
 	}
 	double x0, y0;
 	for (int j = 0; j < NumParts; j++)
@@ -259,16 +263,16 @@ qTree* parse_polygon(QFile& in)
 		else if (NumParts == 1)
 			index = NumPoints;
 		else
-			index = pointIndex[j + 1];
+			index = polygon->partsIndex[j + 1];
 
 		int size;
 		if (j != NumParts - 1)
-			size = pointIndex[j + 1] - pointIndex[j];
+			size = polygon->partsIndex[j + 1] - polygon->partsIndex[j];
 		else
-			size = NumPoints - pointIndex[j];
+			size = NumPoints - polygon->partsIndex[j];
 		for (int i = 0; i < size / 2; i++)
 		{
-			element ele;
+			eleLine ele;
 			double x1, y1, x2, y2;
 			in.read((char*)&x1, 8);
 			in.read((char*)&y1, 8);
@@ -276,53 +280,53 @@ qTree* parse_polygon(QFile& in)
 			in.read((char*)&y2, 8);
 			if (i)
 			{
-				element elel;
-				elel.ele_line.x1 = x0;
-				elel.ele_line.x2 = x1;
-				elel.ele_line.y1 = y0;
-				elel.ele_line.y2 = y1;
-				polygon->insertEle(polygon, elel);
+				eleLine elel;
+				elel.x1 = x0;
+				elel.x2 = x1;
+				elel.y1 = y0;
+				elel.y2 = y1;
+				polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], elel);
 			}
 			else
 				xi = x1, yi = y1;
 			x0 = x2;
 			y0 = y2;
-			ele.ele_line.x1 = x1;
-			ele.ele_line.x2 = x2;
-			ele.ele_line.y1 = y1;
-			ele.ele_line.y2 = y2;
+			ele.x1 = x1;
+			ele.x2 = x2;
+			ele.y1 = y1;
+			ele.y2 = y2;
 
 			if (i == size / 2 - 1)
 				xl = x2, yl = y2;
-			polygon->insertEle(polygon, ele);
+			polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], ele);
 		}
 		if (size % 2)
 		{
-			element ele;
+			eleLine ele;
 			double x1, y1;
 			in.read((char*)&x1, 8);
 			in.read((char*)&y1, 8);
 
-			ele.ele_line.x1 = x0;
-			ele.ele_line.x2 = x1;
-			ele.ele_line.y1 = y0;
-			ele.ele_line.y2 = y1;
-			polygon->insertEle(polygon, ele);
+			ele.x1 = x0;
+			ele.x2 = x1;
+			ele.y1 = y0;
+			ele.y2 = y1;
+			polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], ele);
 
-			ele.ele_line.x1 = x1;
-			ele.ele_line.x2 = xi;
-			ele.ele_line.y1 = y1;
-			ele.ele_line.y2 = yi;
-			polygon->insertEle(polygon, ele);
+			ele.x1 = x1;
+			ele.x2 = xi;
+			ele.y1 = y1;
+			ele.y2 = yi;
+			polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], ele);
 		}
 		else
 		{
-			element ele;
-			ele.ele_line.x1 = xl;
-			ele.ele_line.x2 = xi;
-			ele.ele_line.y1 = yl;
-			ele.ele_line.y2 = yi;
-			polygon->insertEle(polygon, ele);
+			eleLine ele;
+			ele.x1 = xl;
+			ele.x2 = xi;
+			ele.y1 = yl;
+			ele.y2 = yi;
+			polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], ele);
 		}
 	}
 
@@ -333,7 +337,7 @@ qTree* parse_polygon(QFile& in)
 string parse_string(QFile &input, char length)
 {
 	string temp;
-	char tempchar;
+	char tempchar; 
 	for (size_t i = 0; i < length; i++)
 	{
 		input.read((char*)&tempchar, 1);
@@ -373,7 +377,7 @@ string parse_logical_str(QFile &input)
 parseDBF parse_dbf(QFile& input)
 {
 	parseDBF tempdbf;
-	Header header;
+	dbfHeader header;
 	char tempchar;
 	int tempint;
 	short tempshort;
@@ -425,7 +429,6 @@ parseDBF parse_dbf(QFile& input)
 		for (size_t i = 0; i < 11; i++)
 		{
 			input.read(&tempchar, 1);
-			//temp.name[i] = tempchar;
 			temp.name.append(tempchar);
 		}
 		input.read((char*)&tempchar, 1);
@@ -456,8 +459,6 @@ parseDBF parse_dbf(QFile& input)
 	input.read((char*)&tempchar, 1);
 
 	tempdbf.dbfRecord = rec;
-	vector<logical> parlog;
-	vector<QString> parstr;
 	vector< vector<string> > dbfdata;
 	for (size_t i = 0; i < header.recordsNum; i++)
 	{
@@ -477,10 +478,7 @@ parseDBF parse_dbf(QFile& input)
 	}
 
 	input.read((char*)&tempchar, 1);
-	cout << (int)tempchar;
-
-	//tempdbf.logic = parlog;
-	//tempdbf.str = parstr;
 	tempdbf.dbfdata = dbfdata;
+
 	return tempdbf;
 }
