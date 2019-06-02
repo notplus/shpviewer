@@ -9,7 +9,7 @@ paintWidget::paintWidget(QWidget *parent) :
 
 	zoomSlider = new QSlider;
 	zoomSlider->setMinimum(1);
-	zoomSlider->setMaximum(300);
+	zoomSlider->setMaximum(200);
 	zoomSlider->setTickPosition(QSlider::TicksRight);
 
 	rotateSlider = new QSlider;
@@ -34,48 +34,55 @@ paintWidget::paintWidget(QWidget *parent) :
 void paintWidget::paintEvent(QPaintEvent *event)
 {
 	QPainter painter(this);
-	if (!shape.empty())
+	painter.drawRect(0, 0, 1440, 720);
+	if (!changeManager::Instance()->shape.empty())
 	{
 		painter.rotate(rotateSlider->value());
 		Region minRegion;
 		initRegion(&minRegion, 0, 0, 0, 0);
-		includeMin(&shpshape::tree[index], &region[index], &minRegion);
-		//qDebug() << minRegion.up << " " << minRegion.bottom << " " << minRegion.left <<
-		// " << minRegion.right << endl;
+		includeMin(&changeManager::Instance()->TREE[index], &region[index], &minRegion);
 		qTree* view_tree;
-		returnTree(&shpshape::tree[index], &minRegion, view_tree);
-		//qDebug() << view_tree->depth << endl;
-		shape[index][0]->render(view_tree, region[index], index,&painter);
+		returnTree(&changeManager::Instance()->TREE[index], &minRegion, view_tree);
+		paintShape(view_tree, &painter);
 	}
+}
+
+void paintWidget::paintShape(qTree* node, QPainter* painter)
+{
+	if (node->is_leaf)
+		return;
+	if (node->objects != NULL)
+	{
+		for (int i = 0; i < node->objects->size(); i++)
+		{
+			auto o = (*(node->objects))[i];
+			((shpshape*)o)->painterS = painter;
+			((shpshape*)o)->index = index;
+			o->render();
+		}
+	}
+	paintShape(node->lb, painter);
+	paintShape(node->lu, painter);
+	paintShape(node->rb, painter);
+	paintShape(node->ru, painter);
 }
 
 void paintWidget::updateScale(int)
 {
-	double lng = (region[index].left + region[index].right) / 2;
-	double lat = (region[index].bottom + region[index].up) / 2;
-
-	lng = (mousePos.x() - shpshape::transX[index]) / shpshape::scale[index] - 180;
-	lat = 90 - (mousePos.y() - shpshape::transY[index]) / shpshape::scale[index];
+	double lng = (mousePos.x() - shpshape::transX[index]) / shpshape::scale[index] - 180;
+	double lat = 90 - (mousePos.y() - shpshape::transY[index]) / shpshape::scale[index];
 
 	shpshape::scale[index] = zoomSlider->value();
-	//shpshape::transX[index] = (180 + lng) * 4 - (180 + lng)*shpshape::scale[index];
-	//shpshape::transY[index] = (90 - lat) * 4 - (90 - lat)*shpshape::scale[index];
-
 	shpshape::transX[index] = mousePos.x() - (180 + lng)*shpshape::scale[index];
 	shpshape::transY[index] = mousePos.y() - (90 - lat)*shpshape::scale[index];
 
-	//double rl = 1440 /shpshape::scale[index];
-	//double rh = 720 / shpshape::scale[index];
-	double rl = this->size().width() / shpshape::scale[index];
-	double rh = this->size().height() / shpshape::scale[index];
+	double rl = 1440 /shpshape::scale[index];
+	double rh = 720 / shpshape::scale[index];
+
 	region[index].up = lat + rh/2 ;
-	region[index].bottom = lat - rh/2 ;
-	region[index].left = lng - rl/2 ;
-	region[index].right = lng + rl/2 ;
-	//qDebug() << lng << " " << lat << endl;
-	qDebug() << region[index].up << " " << region[index].bottom << " " << region[index].left
-		<< " " << region[index].right << endl;
-	//qDebug() << mousePos.x() << " " << mousePos.y() << endl;
+	region[index].bottom = lat - rh/2;
+	region[index].left = lng - rl/2;
+	region[index].right = lng + rl/2;
 	
 	update();
 }
@@ -88,16 +95,11 @@ void paintWidget::updateTrans(int x,int y)
 		- (90 - (mousePos.y() - shpshape::transY[index]) / shpshape::scale[index]);
 	double lng = (mousePos.x() - shpshape::transX[index]) / shpshape::scale[index] - 180;
 	double lat = 90 - (mousePos.y() - shpshape::transY[index]) / shpshape::scale[index];
-	double lngg = (x - shpshape::transX[index]) / shpshape::scale[index] - 180;
-	double latt = 90 - (y - shpshape::transY[index]) / shpshape::scale[index];
-	//qDebug() << lng << " " << lat << " " << lngg << " " << latt << endl;
-	//qDebug() << xc << " " << yc << endl;
+
 	region[index].up =region[index].up- yc;
 	region[index].bottom=region[index].bottom -yc;
 	region[index].left =region[index].left- xc;
 	region[index].right =region[index].right- xc;
-	qDebug() << region[index].up << " " << region[index].bottom << " " << region[index].left
-	<< " " << region[index].right << endl;
 	shpshape::transX[index] = shpshape::transX[index] + x - mousePos.x();
 	shpshape::transY[index] = shpshape::transY[index] + y - mousePos.y();
 	update();
@@ -105,7 +107,7 @@ void paintWidget::updateTrans(int x,int y)
 
 void paintWidget::zoomChange(int n)
 {
-	zoomSlider->setValue(zoomSlider->value() + n/10);
+	zoomSlider->setValue(zoomSlider->value() + n/30);
 }
 
 void paintWidget::wheelEvent(QWheelEvent *event)
@@ -129,10 +131,6 @@ void paintWidget::mousePressEvent(QMouseEvent *event)
 {
 	mousePos.setX(event->x());
 	mousePos.setY(event->y());
-	qDebug() << event->x() << " " << event->y() << endl;
-	double lng = (mousePos.x() - shpshape::transX[index]) / shpshape::scale[index] - 180;
-	double lat = 90 - (mousePos.y() - shpshape::transY[index]) / shpshape::scale[index];
-	qDebug() << lng << " " << lat << endl;
 }
 
 void paintWidget::updateRotate(int)

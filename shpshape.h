@@ -5,13 +5,15 @@
 #include <qpainter.h>
 #include <qdebug.h>
 
-class shpshape
+
+
+class shpshape : public abstractObject
 {
 public:
-	virtual void render(qTree* node, Region region, size_t index, QPainter* painter)=0;
-	static std::vector<qTree> tree;
+	virtual void render() = 0;
 	std::vector<std::string> dbfdata;
-	Region region;
+	size_t index;
+	QPainter* painterS;
 	
 	static std::vector<int> scale;
 	static std::vector<double> transX;
@@ -19,8 +21,7 @@ public:
 
 	static bool __init;
 	static bool init() {
-		qTree a=creatRoot();
-		tree.push_back(a);
+		
 		scale.push_back(0);
 		transX.push_back(0.0);
 		transY.push_back(0.0);
@@ -28,51 +29,61 @@ public:
 	}
 };
 
-
-
 class shppoint : public shpshape
 {
 public:
-	virtual void render(qTree* node, Region region, size_t index, QPainter* painter) override;
+	virtual void render() override;
 
 };
 
 class shpline :public shpshape
 {
 public:
-	virtual void render(qTree* node, Region region, size_t index, QPainter* painter) override;
+	virtual void render() override;
 
-	std::vector<int> partsIndex;
+	int numParts;
+	int* partsIndex;
 };
 
 class shppolygon:public shpshape
 {
 public:
-	virtual void render(qTree* node, Region region, size_t index, QPainter* painter) override;
-	std::vector<int> partsIndex;
+	virtual void render() override;
 
-private:
-
+	int numParts;
+	int* partsIndex;
 };
 
 class shapeFactory
 {
 public:
-	//shapeFactory();
-
-	virtual shppoint* createPoint() 
+	static shapeFactory* Instance();
+	virtual shppoint* createPoint()
 	{
 		return new shppoint;
 	}
 
-	virtual shpline* createLine() 
+	virtual shpline* createLine()
 	{
 		return new shpline;
 	}
 
-	virtual shppolygon* createPolygon() 
+	virtual shppolygon* createPolygon()
 	{
 		return new shppolygon;
 	}
+
+private:
+	static shapeFactory* _instance;
+};
+
+class changeManager
+{
+public:
+	static changeManager* Instance();
+	std::vector<qTree> TREE;
+	std::vector<std::vector<abstractObject*>> shape;
+private:
+	static changeManager* _instance;
 
 };

@@ -67,9 +67,9 @@ vector<int> parse_record_header(QFile& in)
 	return record;
 }
 
-vector<shpshape*> parseShp(QFile& in, Region* reg, size_t fileIndex)
+vector<abstractObject*> parseShp(QFile& in, Region* reg, size_t fileIndex)
 {
-	vector<shpshape*> shp;
+	vector<abstractObject*> shp;
 	shpHeader header = parse_header(in);
 	initRegion(reg, header.header_2[3], header.header_2[1],
 		header.header_2[0], header.header_2[2]);
@@ -77,18 +77,26 @@ vector<shpshape*> parseShp(QFile& in, Region* reg, size_t fileIndex)
 	{
 		auto record = parse_record_header(in);
 		filele += record[1];
-		shpshape* shptemp = parse_shape(in,fileIndex);
-		shp.push_back(shptemp);
+		abstractObject* temp = parse_shape(in, fileIndex);
+		Region minRegion;
+		initRegion(&minRegion, 0, 0, 0, 0);
+		includeMin(&changeManager::Instance()->TREE[fileIndex], &temp->region, &minRegion);
+		qTree* view_tree;
+		returnTree(&changeManager::Instance()->TREE[fileIndex], &minRegion, view_tree);
+		if (view_tree->objects==NULL)
+			view_tree->objects = new std::vector<abstractObject*>;
+		view_tree->objects->push_back(temp);
+		shp.push_back(temp);
 	}
-	
+
 	return shp;
 }
 
-shpshape* parse_shape(QFile& in, size_t fileIndex)
+abstractObject* parse_shape(QFile& in, size_t fileIndex)
 {
 	int type;
 	in.read((char*)&type, 4);
-	shpshape* ret;
+	abstractObject* ret;
 	switch (type)
 	{
 	case 1:
@@ -108,13 +116,12 @@ shpshape* parse_shape(QFile& in, size_t fileIndex)
 	return ret;
 }
 
-shpshape* parse_point(QFile& in, size_t fileIndex)
+abstractObject* parse_point(QFile& in, size_t fileIndex)
 {
 	int NumParts;
 	int NumPoints;
 	Region region;
-	shapeFactory* factory = new shapeFactory;
-	shppoint* point = factory->createPoint();
+	shppoint* point = shapeFactory::Instance()->createPoint();
 	double scope[4];
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -126,31 +133,33 @@ shpshape* parse_point(QFile& in, size_t fileIndex)
 	point->region = region;
 	in.read((char*)&NumParts, 4);
 	in.read((char*)&NumPoints, 4);
+	point->ele_list.resize(NumPoints);
+	point->ele_num = NumPoints;
 	for (int i = 0; i < NumParts; i++)
 	{
 		int a;
 		in.read((char*)&a, 4);
 	}
 	for (int i = 0; i < NumPoints; i++) {
-		elePoint ele;
+		elePoint* ele = (elePoint*)malloc(sizeof(elePoint));
 		double x, y;
-		in.read((char*)&x, 8);
-		in.read((char*)&y, 8);
-		ele.y = y;
-		ele.x = x;
-		point->tree[fileIndex].insertEle(&point->tree[fileIndex], ele);
+		in.read((char*)& x, 8);
+		in.read((char*)& y, 8);
+		ele->y = y;
+		ele->x = x;
+		changeManager::Instance()->TREE[fileIndex].insertEle(&changeManager::Instance()->TREE[fileIndex], ele);
+		point->ele_list[i] = ele;
 	}
 	
 	return point;
 }
 
-shpshape* parse_polyline(QFile& in, size_t fileIndex)
+abstractObject* parse_polyline(QFile& in, size_t fileIndex)
 {
 	int NumParts;
 	int NumPoints;
 	Region region;
-	shapeFactory* factory = new shapeFactory;
-	shpline* line = factory->createLine();
+	shpline* line = shapeFactory::Instance()->createLine();
 	double scope[4];
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -162,80 +171,37 @@ shpshape* parse_polyline(QFile& in, size_t fileIndex)
 	line->region = region;
 	in.read((char*)&NumParts, 4);
 	in.read((char*)&NumPoints, 4);
+	line->partsIndex = (int*)malloc(sizeof(int) * NumParts);
+	line->ele_list.resize(NumPoints);
+	line->ele_num = NumPoints;
+	line->numParts = NumParts;
 	for (int i = 0; i < NumParts; i++)
 	{
 		int a;
 		in.read((char*)&a, 4);
-		line->partsIndex.push_back(a);
+		line->partsIndex[i]=a;
 	}
-	double x0, y0;
-	for (int j = 0; j < NumParts; j++)
+	for (int i = 0; i < NumPoints; i++)
 	{
-		int index;
-		if (j == NumParts - 1)
-			index = NumPoints;
-		else if (NumParts == 1)
-			index = NumPoints;
-		else
-			index = line->partsIndex[j + 1];
-
-		int size;
-		if (j != NumParts - 1)
-			size = line->partsIndex[j + 1] - line->partsIndex[j];
-		else
-			size = NumPoints - line->partsIndex[j];
-		for (int i = 0; i < size / 2; i++)
-		{
-			eleLine ele;
-			double x1, y1, x2, y2;
-			in.read((char*)&x1, 8);
-			in.read((char*)&y1, 8);
-			in.read((char*)&x2, 8);
-			in.read((char*)&y2, 8);
-			if (i)
-			{
-				eleLine elel;
-				elel.x1 = x0;
-				elel.x2 = x1;
-				elel.y1 = y0;
-				elel.y2 = y1;
-				line->tree[fileIndex].insertEle(&line->tree[fileIndex], elel);
-			}
-			x0 = x2;
-			y0 = y2;
-			ele.x1 = x1;
-			ele.x2 = x2;
-			ele.y1 = y1;
-			ele.y2 = y2;
-
-			line->tree[fileIndex].insertEle(&line->tree[fileIndex], ele);
-		}
-		if (size % 2)
-		{
-			eleLine ele;
-			double x1, y1;
-			in.read((char*)&x1, 8);
-			in.read((char*)&y1, 8);
-
-			ele.x1 = x0;
-			ele.x2 = x1;
-			ele.y1 = y0;
-			ele.y2 = y1;
-
-			line->tree[fileIndex].insertEle(&line->tree[fileIndex], ele);
-		}
+		elePoint* ele = (elePoint*)malloc(sizeof(elePoint));
+		double x, y;
+		in.read((char*)& x, 8);
+		in.read((char*)& y, 8);
+		ele->y = y;
+		ele->x = x;
+		changeManager::Instance()->TREE[fileIndex].insertEle(&changeManager::Instance()->TREE[fileIndex], ele);
+		line->ele_list[i] = ele;
 	}
 
 	return line;
 }
 
-shpshape* parse_polygon(QFile& in, size_t fileIndex)
+abstractObject* parse_polygon(QFile& in, size_t fileIndex)
 {
 	int NumParts;
 	int NumPoints;
 	Region region;
-	shapeFactory* factory = new shapeFactory;
-	shppolygon* polygon = factory->createPolygon();
+	shppolygon* polygon = shapeFactory::Instance()->createPolygon();
 	double scope[4];
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -247,87 +213,26 @@ shpshape* parse_polygon(QFile& in, size_t fileIndex)
 	polygon->region = region;
 	in.read((char*)&NumParts, 4);
 	in.read((char*)&NumPoints, 4);
+	polygon->partsIndex = (int*)malloc(sizeof(int) * NumParts);
+	polygon->ele_list.resize(NumPoints);
+	polygon->numParts = NumParts;
+	polygon->ele_num = NumPoints;
 	for (int i = 0; i < NumParts; i++)
 	{
 		int a;
 		in.read((char*)&a, 4);
-		polygon->partsIndex.push_back(a);
+		polygon->partsIndex[i]=a;
 	}
-	double x0, y0;
-	for (int j = 0; j < NumParts; j++)
+	for (int i = 0; i < NumPoints; i++)
 	{
-		int index;
-		double xi, yi, xl, yl;
-		if (j == NumParts - 1)
-			index = NumPoints;
-		else if (NumParts == 1)
-			index = NumPoints;
-		else
-			index = polygon->partsIndex[j + 1];
-
-		int size;
-		if (j != NumParts - 1)
-			size = polygon->partsIndex[j + 1] - polygon->partsIndex[j];
-		else
-			size = NumPoints - polygon->partsIndex[j];
-		for (int i = 0; i < size / 2; i++)
-		{
-			eleLine ele;
-			double x1, y1, x2, y2;
-			in.read((char*)&x1, 8);
-			in.read((char*)&y1, 8);
-			in.read((char*)&x2, 8);
-			in.read((char*)&y2, 8);
-			if (i)
-			{
-				eleLine elel;
-				elel.x1 = x0;
-				elel.x2 = x1;
-				elel.y1 = y0;
-				elel.y2 = y1;
-				polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], elel);
-			}
-			else
-				xi = x1, yi = y1;
-			x0 = x2;
-			y0 = y2;
-			ele.x1 = x1;
-			ele.x2 = x2;
-			ele.y1 = y1;
-			ele.y2 = y2;
-
-			if (i == size / 2 - 1)
-				xl = x2, yl = y2;
-			polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], ele);
-		}
-		if (size % 2)
-		{
-			eleLine ele;
-			double x1, y1;
-			in.read((char*)&x1, 8);
-			in.read((char*)&y1, 8);
-
-			ele.x1 = x0;
-			ele.x2 = x1;
-			ele.y1 = y0;
-			ele.y2 = y1;
-			polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], ele);
-
-			ele.x1 = x1;
-			ele.x2 = xi;
-			ele.y1 = y1;
-			ele.y2 = yi;
-			polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], ele);
-		}
-		else
-		{
-			eleLine ele;
-			ele.x1 = xl;
-			ele.x2 = xi;
-			ele.y1 = yl;
-			ele.y2 = yi;
-			polygon->tree[fileIndex].insertEle(&polygon->tree[fileIndex], ele);
-		}
+		elePoint* ele = (elePoint*)malloc(sizeof(elePoint));
+		double x, y;
+		in.read((char*)& x, 8);
+		in.read((char*)& y, 8);
+		ele->y = y;
+		ele->x = x;
+		changeManager::Instance()->TREE[fileIndex].insertEle(&changeManager::Instance()->TREE[fileIndex], ele);
+		polygon->ele_list[i] = ele;
 	}
 
 	return polygon;

@@ -38,7 +38,6 @@ struct dbfHeader
 
 struct Record
 {
-	//QString name[11];
 	QString name;
 	char type;
 	int reserved_1;
@@ -63,12 +62,11 @@ vector<double> parse_header_2(QFile& in);
 shpHeader parse_header(QFile& in);
 vector<int> parse_record_header(QFile& in);
 
-vector<shpshape*> parseShp(QFile& in, Region* reg, size_t fileIndex);
-shpshape* parse_shape(QFile& in, size_t fileIndex);
-shpshape* parse_point(QFile& in, size_t fileIndex);
-shpshape* parse_polyline(QFile& in, size_t fileIndex);
-shpshape* parse_polygon(QFile& in, size_t fileIndex);
-
+vector<abstractObject*> parseShp(QFile& in, Region* reg, size_t fileIndex);
+abstractObject* parse_shape(QFile& in, size_t fileIndex);
+abstractObject* parse_point(QFile& in, size_t fileIndex);
+abstractObject* parse_polyline(QFile& in, size_t fileIndex);
+abstractObject* parse_polygon(QFile& in, size_t fileIndex);
 
 struct parseDBF
 {

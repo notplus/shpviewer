@@ -18,6 +18,7 @@ public:
 	void updateTrans(int ,int);
 	void paintEvent(QPaintEvent *);
 	void mousePressEvent(QMouseEvent *event);
+	void paintShape(qTree* node, QPainter* painter);
 public slots:
 	void updateScale(int i=1);
 	void updateRotate(int i = 1);
@@ -27,9 +28,7 @@ public:
 	QSlider *zoomSlider;
 	QSlider *rotateSlider;
 	QPoint mousePos;
-	std::vector<std::vector<shpshape*>> shape;
 	std::vector<Region> region;
 	std::vector<int> angle;
 };
-
 

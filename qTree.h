@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <cmath>
+#include <vector>
 #define MAX_ELE_NUM 100
 
 struct Region
@@ -18,30 +19,28 @@ struct Region
 
 struct elePoint
 {
-	double x=1000;
+	double x;
 	double y;
 };
 
-struct eleLine
+class abstractObject 
 {
-	double x1, y1;
-	double x2, y2;
+public:
+	virtual void render()=0;
+
+	Region region;
+	int ele_num;
+	std::vector<elePoint*> ele_list;
 };
 
-struct element
-{
-	elePoint ele_point;
-	eleLine ele_line;
-};
 
 class qTree
 {
 public:
 	void initNode(qTree* node, int depth, Region region);
-	void insertEle(qTree* node, elePoint ele);
-	void insertEle(qTree* node, eleLine ele);
-	void splitNode(qTree *node);
+	void insertEle(qTree* node, elePoint* ele);
 	qTree* createChild(qTree *node, double bottom, double up, double left, double right);
+	void splitNode(qTree* node);
 
 	int depth;
 	bool is_leaf;
@@ -51,10 +50,12 @@ public:
 	qTree *ru;
 	qTree *rb;
 	int ele_num;
-	element* ele_list[MAX_ELE_NUM];
+	elePoint* ele_list[MAX_ELE_NUM];
+	std::vector<abstractObject*> *objects;
 };
 
 void initRegion(Region *region, double up, double bottom, double left, double right);
 void includeMin(qTree* tree, Region* region, Region* min_include);
 qTree creatRoot();
 void returnTree(qTree* tree, Region* region, qTree* &ret);
+

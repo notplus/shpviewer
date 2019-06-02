@@ -27,11 +27,10 @@ bool Region::operator<(const Region& b)
 
 bool Region::operator<=(const Region&b)
 {
-	//if (*this < b || *this == b)
-	if ((bottom>b.bottom || fabs(bottom-b.bottom)<1e-6) 
-		&& (up<b.up || fabs(up-b.up)<1e-6)
-		&& (left>b.left || fabs(left-b.left)<1e-6)
-		&& (right<b.right || fabs(right-b.right)<1e-6))
+	if ((bottom > b.bottom || fabs(bottom - b.bottom) < 1e-6)
+		&& (up < b.up || fabs(up - b.up) < 1e-6)
+		&& (left > b.left || fabs(left - b.left) < 1e-6)
+		&& (right < b.right || fabs(right - b.right) < 1e-6))
 		return true;
 	else
 		return false;
@@ -51,6 +50,7 @@ void qTree::initNode(qTree* node, int depth, Region region)
 	node->is_leaf = true;
 	node->ele_num = 0;
 	node->region = region;
+	node->objects = NULL;
 }
 
 qTree creatRoot()
@@ -62,7 +62,7 @@ qTree creatRoot()
 	return tree;
 }
 
-void qTree::insertEle(qTree* node, elePoint ele)
+void qTree::insertEle(qTree* node, elePoint* ele)
 {
 	if (node->is_leaf)
 	{
@@ -73,12 +73,7 @@ void qTree::insertEle(qTree* node, elePoint ele)
 		}
 		else
 		{
-			elePoint* ele_ptr = (elePoint*)(malloc(sizeof(elePoint)));
-			node->ele_list[node->ele_num] = (element*)(malloc(sizeof(element)));
-			ele_ptr->x = ele.x;
-			ele_ptr->y = ele.y;
-			node->ele_list[node->ele_num]->ele_point = *ele_ptr;
-			free(ele_ptr);			//may have errors
+			node->ele_list[node->ele_num] = ele;
 			node->ele_num++;
 		}
 		return;
@@ -86,65 +81,23 @@ void qTree::insertEle(qTree* node, elePoint ele)
 
 	double midHor = (node->region.up + node->region.bottom) / 2;
 	double midVer = (node->region.right + node->region.left) / 2;
-	if (ele.x > midHor)
+	if (ele->x > midVer)
 	{
-		if (ele.y > midVer)
+		if (ele->y > midHor)
 			insertEle(node->ru, ele);
 		else
-			insertEle(node->lu, ele);
+			insertEle(node->rb, ele);
 	}
 	else
 	{
-		if (ele.x > midVer)
-			insertEle(node->rb, ele);
+		if (ele->y > midHor)
+			insertEle(node->lu, ele);
 		else
 			insertEle(node->lb, ele);
 	}
 }
 
-void qTree::insertEle(qTree* node, eleLine ele)
-{
-	if (node->is_leaf)
-	{
-		if (node->ele_num + 1 > MAX_ELE_NUM)
-		{
-			splitNode(node);
-			insertEle(node, ele);
-		}
-		else
-		{
-			eleLine *ele_ptr = (eleLine*)(malloc(sizeof(eleLine)));
-			node->ele_list[node->ele_num] = (element*)(malloc(sizeof(element)));
-			ele_ptr->x1 = ele.x1;
-			ele_ptr->x2 = ele.x2;
-			ele_ptr->y1 = ele.y1;
-			ele_ptr->y2 = ele.y2;
-			node->ele_list[node->ele_num]->ele_line = *ele_ptr;
-			free(ele_ptr);
-			node->ele_num++;
-		}
-		return;
-	}
-
-	double midHor = (node->region.up + node->region.bottom) / 2;
-	double midVer = (node->region.right + node->region.left) / 2;
-	if (ele.y1 > midHor && ele.y2 > midHor)
-	{
-		if (ele.x1 > midVer)
-			insertEle(node->ru, ele);
-		else
-			insertEle(node->lu, ele);
-	}
-	else
-	{
-		if (ele.x1 > midVer)
-			insertEle(node->rb, ele);
-		else
-			insertEle(node->lb, ele);
-	}
-}
-
-void qTree::splitNode(qTree *node)
+void qTree::splitNode(qTree* node)
 {
 	double midHor = (node->region.up + node->region.bottom) / 2;
 	double midVer = (node->region.right + node->region.left) / 2;
@@ -157,11 +110,8 @@ void qTree::splitNode(qTree *node)
 
 	for (size_t i = 0; i < MAX_ELE_NUM; i++)
 	{
-		if (fabs(node->ele_list[i]->ele_point.x)>10000)
-			insertEle(node, node->ele_list[i]->ele_line);
-		else
-			insertEle(node, node->ele_list[i]->ele_point);
-		free(node->ele_list[i]);
+		insertEle(node, node->ele_list[i]);
+		//free(node->ele_list[i]);
 		node->ele_num--;
 	}
 }

@@ -1,9 +1,5 @@
 #include "ShpViewer.h"
-#include <QtWidgets/QApplication>
-#include <qdebug.h>
-#include <qtextcodec.h>
 
-std::vector<qTree> shpshape::tree;
 std::vector<int> shpshape::scale;
 std::vector<double> shpshape::transX;
 std::vector<double> shpshape::transY;

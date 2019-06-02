@@ -1,96 +1,72 @@
 #include "shpshape.h"
 
-void shppoint::render(qTree* node,Region region, size_t index, QPainter* painter)
+void shppoint::render()
 {
-	if (node->is_leaf)
+	for (int i = 0; i < ele_num; i++)
 	{
-		for (int i = 0; i < node->ele_num; i++)
-		{
-
-			if (node->ele_list[i]->ele_point.y >= region.bottom &&
-				node->ele_list[i]->ele_point.y <= region.up &&
-				node->ele_list[i]->ele_point.x >= region.left &&
-				node->ele_list[i]->ele_point.x <= region.right)
-			{
-				qreal x = (180 + node->ele_list[i]->ele_point.x)*scale[index] + transX[index];
-				qreal y = (90 - node->ele_list[i]->ele_point.y)*scale[index] + transY[index];
-				painter->drawPoint(QPointF(x, y));
-			}
-		}
-		return;
-	}
-	else
-	{
-		render(node->lb, region, index, painter);
-		render(node->rb, region, index, painter);
-		render(node->lu, region, index, painter);
-		render(node->ru, region, index, painter);
+		qreal x = (180 + ele_list[i]->x) * scale[index] + transX[index];
+		qreal y = (90 - ele_list[i]->y) * scale[index] + transY[index];
+		painterS->drawPoint(QPointF(x, y));
 	}
 }
 
-void shpline::render(qTree* node, Region region, size_t index, QPainter* painter)
+void shpline::render()
 {
-	if (node->is_leaf)
+	for (int i = 0; i < numParts; i++)
 	{
-		for (int i = 0; i < node->ele_num; i++)
+		QPainterPath path;
+		int index_part = i < (numParts - 1) ? index_part = partsIndex[i + 1] - 1 : index_part = ele_num - 1;
+		path.moveTo((180 + ele_list[partsIndex[i]]->x) * scale[index] + transX[index],
+			(90 - ele_list[partsIndex[i]]->y) * scale[index] + transY[index]);
+		for (int j = partsIndex[i]+1; j <= index_part; j++)
 		{
-			if (node->ele_list[i]->ele_line.y1 >= region.bottom &&
-				node->ele_list[i]->ele_line.y1 <= region.up &&
-				node->ele_list[i]->ele_line.x1 >= region.left &&
-				node->ele_list[i]->ele_line.x1 <= region.right &&
-				node->ele_list[i]->ele_line.y2 >= region.bottom &&
-				node->ele_list[i]->ele_line.y2 <= region.up &&
-				node->ele_list[i]->ele_line.x2 >= region.left &&
-				node->ele_list[i]->ele_line.x2 <= region.right)
-			{
-				qreal x1 = (180 + node->ele_list[i]->ele_line.x1)*scale[index] + transX[index];
-				qreal y1 = (90 - node->ele_list[i]->ele_line.y1)*scale[index] + transY[index];
-				qreal x2 = (180 + node->ele_list[i]->ele_line.x2)*scale[index] + transX[index];
-				qreal y2 = (90 - node->ele_list[i]->ele_line.y2)*scale[index] + transY[index];
-				painter->drawLine(QPointF(x1, y1), QPointF(x2, y2));
-			}
+			qreal x = (180 + ele_list[j]->x) * scale[index] + transX[index];
+			qreal y = (90 - ele_list[j]->y) * scale[index] + transY[index];
+			path.lineTo(x, y);
 		}
-		return;
-	}
-	else
-	{
-		render(node->lb, region, index, painter);
-		render(node->rb, region, index, painter);
-		render(node->lu, region, index, painter);
-		render(node->ru, region, index, painter);
+		painterS->drawPath(path);
 	}
 }
 
-void shppolygon::render(qTree* node, Region region, size_t index, QPainter* painter)
+void shppolygon::render()
 {
-	if (node->is_leaf)
+	for (int i = 0; i < numParts; i++)
 	{
-		for (int i = 0; i < node->ele_num; i++)
+		QPainterPath path;
+		qreal x = (180 + ele_list[partsIndex[i]]->x) * scale[index] + transX[index];
+		qreal y = (90 - ele_list[partsIndex[i]]->y) * scale[index] + transY[index];
+		int index_part = i < (numParts - 1) ? index_part = partsIndex[i + 1] - 1 : index_part = ele_num - 1;
+		path.moveTo(x,y);
+		for (int j = partsIndex[i] + 1; j <= index_part; j++)
 		{
-			if (node->ele_list[i]->ele_line.y1 >= region.bottom &&
-				node->ele_list[i]->ele_line.y1 <= region.up &&
-				node->ele_list[i]->ele_line.x1 >= region.left &&
-				node->ele_list[i]->ele_line.x1 <= region.right &&
-				node->ele_list[i]->ele_line.y2 >= region.bottom &&
-				node->ele_list[i]->ele_line.y2 <= region.up &&
-				node->ele_list[i]->ele_line.x2 >= region.left &&
-				node->ele_list[i]->ele_line.x2 <= region.right)
-			{
-				qreal x1 = (180 + node->ele_list[i]->ele_line.x1)*scale[index] + transX[index];
-				qreal y1 = (90 - node->ele_list[i]->ele_line.y1)*scale[index] + transY[index];
-				qreal x2 = (180 + node->ele_list[i]->ele_line.x2)*scale[index] + transX[index];
-				qreal y2 = (90 - node->ele_list[i]->ele_line.y2)*scale[index] + transY[index];
-				//qDebug() << x1 << " " << y1 << endl;
-				painter->drawLine(QPointF(x1, y1), QPointF(x2, y2));
-			}
+			x = (180 + ele_list[j]->x) * scale[index] + transX[index];
+			y = (90 - ele_list[j]->y) * scale[index] + transY[index];
+			path.lineTo(x, y);
 		}
-		return;
+		painterS->drawPath(path);
 	}
-	else
+}
+
+shapeFactory* shapeFactory::_instance = 0;
+
+shapeFactory* shapeFactory::Instance()
+{
+	if (_instance == 0)
 	{
-		render(node->lb, region, index, painter);
-		render(node->rb, region, index, painter);
-		render(node->lu, region, index, painter);
-		render(node->ru, region, index, painter);
+		_instance = new shapeFactory;
 	}
+	return _instance;
+}
+
+changeManager* changeManager::_instance = 0;
+
+changeManager* changeManager::Instance()
+{
+	if (_instance == 0)
+	{
+		_instance = new changeManager;
+		qTree a = creatRoot();
+		_instance->TREE.push_back(a);
+	}
+	return _instance;
 }

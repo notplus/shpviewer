@@ -16,11 +16,10 @@
 #include <qfileinfo.h>
 #include <vector>
 #include <qstring.h>
-
-QT_BEGIN_NAMESPACE
-class QGraphicsScene;
-class QSplitter;
-QT_END_NAMESPACE
+#include <qdesktopwidget.h>
+#include <QtWidgets/QApplication>
+#include <qdebug.h>
+#include <qtextcodec.h>
 
 class ShpViewer : public QMainWindow
 {
@@ -28,7 +27,7 @@ class ShpViewer : public QMainWindow
 
 public:
 	ShpViewer(QWidget *parent = Q_NULLPTR);
-	
+	void initShape();
 private:
 	paintWidget *paintw;
 	QDockWidget *dockw;
@@ -36,7 +35,6 @@ private:
 	parseDBF dbfDATA;
 	QAction *openAction;
 	QAction *opendbfAction;
-	QGraphicsScene *scene;
 	size_t count;
 	std::vector<QString> itemName;
 	
@@ -45,3 +43,4 @@ private slots:
 	void openDBF();
 	void dockRender(QListWidgetItem *item);
 };
+
